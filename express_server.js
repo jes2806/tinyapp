@@ -14,6 +14,12 @@ const urlDatabase = {
 
 app.use(express.urlencoded({ extended: true }));
 
+app.post('/urls/:key/delete', (req, res) => {
+  console.log('delete route key:', req.params.key);
+  delete urlDatabase[req.params.key];
+  res.redirect('/urls');
+});
+
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
