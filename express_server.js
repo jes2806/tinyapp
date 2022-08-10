@@ -15,7 +15,7 @@ const urlDatabase = {
 
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cookieParser())
+app.use(cookieParser());
 
 app.post('/urls/:key/delete', (req, res) => {
   console.log('delete route key:', req.params.key);
@@ -34,12 +34,12 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username)
+  res.cookie('username', req.body.username);
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('username')
+  res.clearCookie('username');
   res.redirect("/urls");
 });
 
