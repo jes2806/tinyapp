@@ -20,6 +20,16 @@
             <%= id %>
           </a>
         </p>
+        <p>
+          <td>
+            <form method="POST" action="/urls/<%= id %>">
+              <label for="longURL">Edit a URL:</label>
+              <input class="form-control" type="text" name="longURL" placeholder="<%= longURL %>"
+              style="width: 300px; margin-left: auto; margin-right: auto" />
+              <button type="submit"
+              class="btn btn-primary">Submit</button>
+          </td>
+        </p>
       </div>
       <div class="card-footer text-muted"></div>
     </div>
