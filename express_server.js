@@ -2,6 +2,9 @@ const cookieParser = require('cookie-parser');
 const express = require('express');
 const app = express();
 const PORT = 8080;
+const bcrypt = require('bcryptjs');
+// const hashedPassword = bcrypt.hashSync(password, 10);
+
 const generateRandomString = function() {
   return Math.random().toString(36).substr(2, 6);
 };
@@ -9,15 +12,7 @@ const generateRandomString = function() {
 const scanEmail = function(email, users) {
   for (const key in users) {
     if (email === users[key].email) {
-      return true;
-    };
-  }
-};
-
-const passwordCheck = function(password, users) {
-  for (const key in users) {
-    if (password === users[key].password) {
-      return true;
+      return users[key];
     };
   }
 };
@@ -139,21 +134,18 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  const user = { id, email, password };
-
+  const user = scanEmail(email, users);
+  console.log(user);
   if (!scanEmail(email, users)) {
     res.status(403).send('No such email is registered.  Please register!');
     return;
-  } else if (!passwordCheck(password, users)) {
+  } else if (!bcrypt.compareSync(password, user.password)) {
     res.status(403).send('Email and/or password is incorrect, please try again!');
     return;
-  } else {
-    users[id] = user;
   };
-  res.cookie('user_id', id);
+  res.cookie('user_id', user.id);
   res.redirect('/urls');
 });
 
@@ -213,11 +205,22 @@ app.post('/register', (req, res) => {
     res.status(400).send('Email already exists, please log in');
     return;
   } else {
-    users[id] = user;
-  };
-  res.cookie('user_id', id);
-  console.log(users);
-  res.redirect('/urls');
+    bcrypt.genSalt(10)
+      .then((salt) => {
+        return bcrypt.hash(password, salt);
+      })
+      .then((hash) => {
+        users[id] = {
+          id,
+          email,
+          password: hash
+        };
+        console.log(users);
+        res.cookie('user_id', id);
+        res.redirect('/urls');
+
+      });
+  }
 });
 
 app.get('*', (req, res) => { // added this because I learned it in lecture and would like to test it!
