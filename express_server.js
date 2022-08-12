@@ -4,7 +4,7 @@ const express = require('express');
 const app = express();
 const PORT = 8080;
 const bcrypt = require('bcryptjs');
-const getUserByEmail = require('./helpers.js')
+const getUserByEmail = require('./helpers.js');
 
 // const hashedPassword = bcrypt.hashSync(password, 10);
 
@@ -17,7 +17,7 @@ const urlsForUser = function(id) {
   for (const key in urlDatabase) {
     if (urlDatabase[key].userID === id) {
       userURL[key] = urlDatabase[key];
-    };
+    }
   }
   return userURL;
 };
@@ -57,7 +57,7 @@ app.use(cookieSession({
 }));
 
 app.post('/urls/:key/delete', (req, res) => {
-  const shortIDs = Object.keys(urlsForUser(req.session.user_id))
+  const shortIDs = Object.keys(urlsForUser(req.session.user_id));
   if (!urlDatabase[req.params.key]) {
     res.send('You have entered an invalid id!');
     return;
@@ -67,7 +67,7 @@ app.post('/urls/:key/delete', (req, res) => {
     return;
   }
   if (!shortIDs.includes(req.params.key)) {
-    res.send('You do not have access to this shortned URL, please access your urls: <a href="/urls">here</a>')
+    res.send('You do not have access to this shortned URL, please access your urls: <a href="/urls">here</a>');
     return;
   }
   delete urlDatabase[req.params.key];
@@ -77,9 +77,9 @@ app.post('/urls/:key/delete', (req, res) => {
 app.post('/urls/:id', (req, res) => {
   const shortID = req.params.id;
   const longURL = req.body.longURL;
-  const shortIDs = Object.keys(urlsForUser(req.session.user_id))
+  const shortIDs = Object.keys(urlsForUser(req.session.user_id));
   if (!shortIDs.includes(req.params.id)) {
-    res.send('You do not have access to this shortned URL, please access your urls: <a href="/urls">here</a>')
+    res.send('You do not have access to this shortned URL, please access your urls: <a href="/urls">here</a>');
     return;
   }
   if (!urlDatabase[req.params.id]) {
@@ -95,7 +95,7 @@ app.post('/urls/:id', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const id = req.session['user_id']
+  const id = req.session['user_id'];
   if (!id) {
     res.send('You must login in order to view shortened URLS: <br> <a href= "/login">Login</a> <br><a href= "/register">Register</a>');
     return;
@@ -107,7 +107,7 @@ app.get('/urls', (req, res) => {
 
 app.get('/urls/new', (req, res) => {
   if (!req.session.user_id) {
-    res.redirect('/login')
+    res.redirect('/login');
     return;
   }
   const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
@@ -116,7 +116,7 @@ app.get('/urls/new', (req, res) => {
 
 app.get('/register', (req, res) => {
   if (req.session.user_id) {
-    res.redirect('/urls')
+    res.redirect('/urls');
     return;
   }
   const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
@@ -125,7 +125,7 @@ app.get('/register', (req, res) => {
 
 app.get('/login', (req, res) => {
   if (req.session.user_id) {
-    res.redirect('/urls')
+    res.redirect('/urls');
     return;
   }
   const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
@@ -143,25 +143,25 @@ app.post('/login', (req, res) => {
   } else if (!bcrypt.compareSync(password, user.password)) {
     res.status(403).send('Email and/or password is incorrect, please try again!');
     return;
-  };
-  req.session.user_id = user.id
+  }
+  req.session.user_id = user.id;
   res.redirect('/urls');
 });
 
 app.post('/logout', (req, res) => {
-  req.session = null
+  req.session = null;
   res.redirect('/urls');
 });
 
 
 app.get('/urls/:id', (req, res) => {
   if (!req.session.user_id) {
-    res.send('You must be <a href= "/login"> Logged in </a> in order to view this page.')
+    res.send('You must be <a href= "/login"> Logged in </a> in order to view this page.');
     return;
   }
-  const shortIDs = Object.keys(urlsForUser(req.session.user_id))
+  const shortIDs = Object.keys(urlsForUser(req.session.user_id));
   if (!shortIDs.includes(req.params.id)) {
-    res.send('You do not have access to this shortned URL, please access your urls: <a href="/urls">here</a>')
+    res.send('You do not have access to this shortned URL, please access your urls: <a href="/urls">here</a>');
     return;
   }
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: users[req.session["user_id"]] };
@@ -187,7 +187,7 @@ app.post('/urls', (req, res) => {
   }
   const id = generateRandomString();
   console.log(req.body, req.params); // Log the POST request body to the console
-  urlDatabase[id] = { longURL: req.body.longURL, userID: req.session.user_id }
+  urlDatabase[id] = { longURL: req.body.longURL, userID: req.session.user_id };
   res.redirect(`urls/${id}`);
 });
 
