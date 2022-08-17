@@ -1,26 +1,13 @@
-// const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 const express = require('express');
 const app = express();
 const PORT = 8080;
 const bcrypt = require('bcryptjs');
-const getUserByEmail = require('./helpers.js');
+const helpers = require('./helpers.js')
+const getUserByEmail = helpers.getUserByEmail;
+const urlsForUser = helpers.urlsForUser;
+const generateRandomString = helpers.generateRandomString;
 
-// const hashedPassword = bcrypt.hashSync(password, 10);
-
-const generateRandomString = function() {
-  return Math.random().toString(36).substr(2, 6);
-};
-
-const urlsForUser = function(id) {
-  const userURL = {};
-  for (const key in urlDatabase) {
-    if (urlDatabase[key].userID === id) {
-      userURL[key] = urlDatabase[key];
-    }
-  }
-  return userURL;
-};
 
 app.set('view engine', 'ejs');
 
@@ -50,19 +37,18 @@ const urlDatabase = {
 
 app.use(express.urlencoded({ extended: true }));
 
-// app.use(cookieParser());
 app.use(cookieSession({
   name: 'cookiesess',
   keys: ['secret key', 'different secret key']
 }));
 
 app.post('/urls/:key/delete', (req, res) => {
-  const shortIDs = Object.keys(urlsForUser(req.session.user_id));
+  const shortIDs = Object.keys(urlsForUser(req.session.userId, urlDatabase));
   if (!urlDatabase[req.params.key]) {
     res.send('You have entered an invalid id!');
     return;
   }
-  if (!req.session.user_id) {
+  if (!req.session.userId) {
     res.send('You must be logged in to do this!');
     return;
   }
@@ -77,7 +63,7 @@ app.post('/urls/:key/delete', (req, res) => {
 app.post('/urls/:id', (req, res) => {
   const shortID = req.params.id;
   const longURL = req.body.longURL;
-  const shortIDs = Object.keys(urlsForUser(req.session.user_id));
+  const shortIDs = Object.keys(urlsForUser(req.session.userId, urlDatabase));
   if (!shortIDs.includes(req.params.id)) {
     res.send('You do not have access to this shortned URL, please access your urls: <a href="/urls">here</a>');
     return;
@@ -86,49 +72,57 @@ app.post('/urls/:id', (req, res) => {
     res.send('You have entered an invalid id!');
     return;
   }
-  if (!req.session.user_id) {
+  if (!req.session.userId) {
     res.send('You must be logged in to do this!');
     return;
   }
-  urlDatabase[shortID] = { longURL, userID: req.session['user_id'] };
+  urlDatabase[shortID] = { longURL, userID: req.session['userId'] };
   res.redirect('/urls');
 });
 
 app.get('/urls', (req, res) => {
-  const id = req.session['user_id'];
+  const id = req.session['userId'];
   if (!id) {
     res.send('You must login in order to view shortened URLS: <br> <a href= "/login">Login</a> <br><a href= "/register">Register</a>');
     return;
   } else {
-    const templateVars = { urls: urlsForUser(id), user: users[id] };
+    const templateVars = { urls: urlsForUser(id, urlDatabase), user: users[id] };
     res.render('urls_index', templateVars);
   }
 });
 
+app.get('/', (req, res) => {
+  if (req.session.userId) {
+    res.redirect('/urls');
+    return;
+  }
+  res.redirect('/login');
+});
+
 app.get('/urls/new', (req, res) => {
-  if (!req.session.user_id) {
+  if (!req.session.userId) {
     res.redirect('/login');
     return;
   }
-  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
+  const templateVars = { urls: urlDatabase, user: users[req.session['userId']] };
   res.render('urls_new', templateVars);
 });
 
 app.get('/register', (req, res) => {
-  if (req.session.user_id) {
+  if (req.session.userId) {
     res.redirect('/urls');
     return;
   }
-  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
+  const templateVars = { urls: urlDatabase, user: users[req.session['userId']] };
   res.render('register', templateVars);
 });
 
 app.get('/login', (req, res) => {
-  if (req.session.user_id) {
+  if (req.session.userId) {
     res.redirect('/urls');
     return;
   }
-  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
+  const templateVars = { urls: urlDatabase, user: users[req.session['userId']] };
   res.render('login', templateVars);
 });
 
@@ -144,7 +138,7 @@ app.post('/login', (req, res) => {
     res.status(403).send('Email and/or password is incorrect, please try again!');
     return;
   }
-  req.session.user_id = user.id;
+  req.session.userId = user.id;
   res.redirect('/urls');
 });
 
@@ -155,16 +149,16 @@ app.post('/logout', (req, res) => {
 
 
 app.get('/urls/:id', (req, res) => {
-  if (!req.session.user_id) {
+  if (!req.session.userId) {
     res.send('You must be <a href= "/login"> Logged in </a> in order to view this page.');
     return;
   }
-  const shortIDs = Object.keys(urlsForUser(req.session.user_id));
+  const shortIDs = Object.keys(urlsForUser(req.session.userId, urlDatabase));
   if (!shortIDs.includes(req.params.id)) {
     res.send('You do not have access to this shortned URL, please access your urls: <a href="/urls">here</a>');
     return;
   }
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: users[req.session["user_id"]] };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: users[req.session["userId"]] };
   res.render('urls_show', templateVars);
 });
 
@@ -181,13 +175,13 @@ app.get('/u/:id', (req, res) => {
 });
 
 app.post('/urls', (req, res) => {
-  if (!req.session.user_id) {
+  if (!req.session.userId) {
     res.send('You must login in order to shorten URLS');
     return;
   }
   const id = generateRandomString();
   console.log(req.body, req.params); // Log the POST request body to the console
-  urlDatabase[id] = { longURL: req.body.longURL, userID: req.session.user_id };
+  urlDatabase[id] = { longURL: req.body.longURL, userID: req.session.userId };
   res.redirect(`urls/${id}`);
 });
 
@@ -215,14 +209,14 @@ app.post('/register', (req, res) => {
           password: hash
         };
         console.log(users);
-        req.session.user_id = id;
+        req.session.userId = id;
         res.redirect('/urls');
 
       });
   }
 });
 
-app.get('*', (req, res) => { // added this because I learned it in lecture and would like to test it!
+app.get('*', (req, res) => { 
   res.status(404).send('This is not the page you are looking for');
 });
 
